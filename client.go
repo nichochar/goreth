@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -20,6 +21,7 @@ const (
 	bcsContractAddr  = "0xe182A80E76B1cF17D0eB018D563823357F1Ae296"
 	nichocharEthAddr = "0x885F8588bB15a046f71bD5119f5BC3B67ee883d3"
 	pushixEthAddr    = "0x1dA4FDf7029bDf8ff11f28141a659f6563940642"
+	dwrAddr          = "0xD7029BDEa1c17493893AAfE29AAD69EF892B8ff2"
 )
 
 // 1 * wei * 10^18 = 1 eth
@@ -67,7 +69,7 @@ func main() {
 	}
 	fmt.Printf("Current block number: %d\n", currentBlock)
 
-	for _, address := range []string{bcsContractAddr, nichocharEthAddr, pushixEthAddr} {
+	for _, address := range []string{bcsContractAddr, nichocharEthAddr, pushixEthAddr, dwrAddr} {
 		ethBalance, err := getEthBalanceForAddr(client, address, nil)
 		if err != nil {
 			log.Fatal(err)
@@ -78,7 +80,22 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("Account %v\n%20s: %.2f\n%20s: %.2f\n----\n", address[0:6], "Balance", pendingEthBalance, "Pending Balance", ethBalance)
+		var contractIndicator = ""
+		ok, err := isContractAddr(client, address)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if ok {
+			contractIndicator = "(smart contract)"
+		}
+		fmt.Printf("Account %v %v\n%20s: %.2f\n%20s: %.2f\n----\n", address[0:6], contractIndicator, "Balance", pendingEthBalance, "Pending Balance", ethBalance)
 
 	}
+	fmt.Println("Creating address...")
+	privateAddr, publicAddr, err := MakeWallet()
+	if err != nil {
+		log.Fatal(err)
+	}
+	spew.Dump(privateAddr)
+	spew.Dump(publicAddr)
 }
