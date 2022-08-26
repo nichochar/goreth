@@ -6,10 +6,11 @@ import (
 	"log"
 	"math"
 	"math/big"
-	"unsafe"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -24,6 +25,18 @@ const (
 	pushixEthAddr    = "0x1dA4FDf7029bDf8ff11f28141a659f6563940642"
 	dwrAddr          = "0xD7029BDEa1c17493893AAfE29AAD69EF892B8ff2"
 )
+
+// CLI utility that prints a title nicely, directly to the console
+// My Title becomes ->
+// ########
+// My Title
+// ########
+func printTitle(title string) {
+	hashtags := strings.Repeat("#", len(title))
+	fmt.Println("\n" + hashtags)
+	fmt.Println(title)
+	fmt.Println(hashtags + "\n")
+}
 
 // 1 * wei * 10^18 = 1 eth
 func weiToEth(weiBalance *big.Int) *big.Float {
@@ -59,18 +72,29 @@ func getPendingEthBalanceForAddr(client *ethclient.Client, addr string) (*big.Fl
 
 func main() {
 	fmt.Println("Fun with Go and Ethereum.")
+	printTitle("Client")
 	client, err := ethclient.Dial(infuraConn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Chain ID: %v\n", chainID)
+	suggestedGasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Suggested Gas Price through the client with SuggestGasPrice(): %v wei\n", suggestedGasPrice)
 	currentBlock, err := currentBlockNumber(client)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Current block number: %d\n", currentBlock)
 	currentBlockBigInt := new(big.Int).SetUint64(currentBlock)
 
+	printTitle("Ledger Reads")
 	for _, address := range []string{bcsContractAddr, nichocharEthAddr, pushixEthAddr, dwrAddr} {
 		ethBalance, err := getEthBalanceForAddr(client, address, nil)
 		if err != nil {
@@ -93,7 +117,8 @@ func main() {
 		fmt.Printf("Account %v %v\n%20s: %.2f\n%20s: %.2f\n----\n", address[0:6], contractIndicator, "Balance", pendingEthBalance, "Pending Balance", ethBalance)
 
 	}
-	fmt.Println("Creating address...")
+	printTitle("Wallets")
+	fmt.Println("Creating a wallet...")
 	privateAddr, publicAddr, err := MakeWallet()
 	if err != nil {
 		log.Fatal(err)
@@ -106,21 +131,57 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Block Header:")
-	fmt.Println(unsafe.Sizeof(blockHeader))
+	printTitle("Block Header")
 	spew.Dump(blockHeader)
 
 	block, err := blockByNumber(client, currentBlockBigInt)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Block:")
-	fmt.Println(unsafe.Sizeof(block))
+	printTitle("Block")
+	fmt.Printf("Current block number: %d\n", currentBlock)
 
 	count, err := transactionCountInBlock(client, currentBlockBigInt)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Transaction count in block: %d (confirmed %d)\n", len(block.Transactions()), count)
+
+	printTitle("Transactions")
+	showCount := 3
+	fmt.Printf("Showing %d transactions from block %d:\n", showCount, currentBlock)
+	for idx, tx := range block.Transactions() {
+		fmt.Printf("Hash().Hex(): %v\n", tx.Hash().Hex())
+		fmt.Printf("Value(): %v\n", tx.Value().String())
+		fmt.Printf("Gas(): %v\n", tx.Gas())
+		fmt.Printf("GasPrice(): %v\n", tx.GasPrice().Uint64())
+		fmt.Printf("Nonce(): %v\n", tx.Nonce())
+		if len(tx.Data()) > 0 {
+			fmt.Printf("Data(): %v....\n", tx.Data()[0:10])
+		} else {
+			fmt.Println("Empty call data for this tx.")
+		}
+		fmt.Printf("To().Hex(): %v\n", tx.To().Hex())
+		// For getting the sender, we need the chainID (because of EIP-155)
+		msg, err := tx.AsMessage(types.NewEIP155Signer(chainID), nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("msg.From().Hex(): %v\n", msg.From().Hex())
+
+		// Check receipts
+		receipt, err := client.TransactionReceipt(context.Background(), tx.Hash())
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Receipt.Status: %v\n", receipt.Status)
+		fmt.Printf("Receipt.Logs: %v\n", receipt.Logs)
+		fmt.Println()
+
+		if idx > showCount {
+			fmt.Printf("... and %d more tx not shown\n", len(block.Transactions())-showCount)
+			break
+		}
+	}
 
 }
