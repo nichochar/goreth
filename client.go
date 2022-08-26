@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"unsafe"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,7 +16,7 @@ import (
 const (
 	infuraConn = "https://mainnet.infura.io/v3/94112cb024c74fb697592b77c4819ff1"
 	// Assumes you're running the following in another process
-	localGanacheConn = "http://localhost:8545"
+	// localGanacheConn = "http://localhost:8545"
 
 	// Contract addresses
 	bcsContractAddr  = "0xe182A80E76B1cF17D0eB018D563823357F1Ae296"
@@ -68,6 +69,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Current block number: %d\n", currentBlock)
+	currentBlockBigInt := new(big.Int).SetUint64(currentBlock)
 
 	for _, address := range []string{bcsContractAddr, nichocharEthAddr, pushixEthAddr, dwrAddr} {
 		ethBalance, err := getEthBalanceForAddr(client, address, nil)
@@ -98,4 +100,27 @@ func main() {
 	}
 	spew.Dump(privateAddr)
 	spew.Dump(publicAddr)
+
+	// Fun with blocks
+	blockHeader, err := blockHeader(client, currentBlockBigInt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Block Header:")
+	fmt.Println(unsafe.Sizeof(blockHeader))
+	spew.Dump(blockHeader)
+
+	block, err := blockByNumber(client, currentBlockBigInt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Block:")
+	fmt.Println(unsafe.Sizeof(block))
+
+	count, err := transactionCountInBlock(client, currentBlockBigInt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Transaction count in block: %d (confirmed %d)\n", len(block.Transactions()), count)
+
 }
