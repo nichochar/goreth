@@ -68,7 +68,7 @@ func main() {
 	localFlag := flag.Bool("local", false, "a flag that, if passed, runs the script locally")
 	fmt.Println("Fun with Go and Ethereum.")
 	flag.Parse()
-	fmt.Printf("localFlag: %v\n", localFlag)
+
 	if *localFlag {
 		mainLocal()
 	} else {

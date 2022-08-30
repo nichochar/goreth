@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -40,4 +41,27 @@ func MakeWallet() (pub string, priv string, err error) {
 	}
 
 	return publicAddr, privateAddr, nil
+}
+
+func privateKeyFromHex(privateKeyHex string) (*ecdsa.PrivateKey, error) {
+	var cleanKey = privateKeyHex
+	if privateKeyHex[0:2] == "0x" {
+		cleanKey = privateKeyHex[2:]
+	}
+	// Strip out the 0x prefix, since that's not supported by this utility
+	return crypto.HexToECDSA(cleanKey)
+}
+func addressFromPrivateKeyString(privateKeyString string) (string, error) {
+	privateKey, err := privateKeyFromHex(privateKeyString)
+	if err != nil {
+		return "", err
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("error casting public key to ECSDA (unexpected)")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	return fromAddress.Hex(), nil
 }
