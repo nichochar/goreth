@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -64,26 +63,25 @@ func mainRemote() {
 	}
 	printTitle("Wallets")
 	fmt.Println("Creating a wallet...")
-	privateAddr, publicAddr, err := MakeWallet()
+	publicAddr, privateAddr, err := MakeWallet()
 	if err != nil {
 		log.Fatal(err)
 	}
-	spew.Dump(privateAddr)
-	spew.Dump(publicAddr)
+	fmt.Printf("Private Key: %v\n", privateAddr)
+	fmt.Printf("Public Key: %v\n", publicAddr)
 
 	// Fun with blocks
 	blockHeader, err := blockHeader(client, currentBlockBigInt)
 	if err != nil {
 		log.Fatal(err)
 	}
-	printTitle("Block Header")
-	spew.Dump(blockHeader)
+	printTitle("Block")
+	fmt.Printf("Block Header: %+v\n", blockHeader)
 
 	block, err := blockByNumber(client, currentBlockBigInt)
 	if err != nil {
 		log.Fatal(err)
 	}
-	printTitle("Block")
 	fmt.Printf("Current block number: %d\n", currentBlock)
 
 	count, err := transactionCountInBlock(client, currentBlockBigInt)
@@ -110,9 +108,11 @@ func mainRemote() {
 		// For getting the sender, we need the chainID (because of EIP-155)
 		msg, err := tx.AsMessage(types.NewEIP155Signer(chainID), nil)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println("Something went wrong when calling tx.AsMessage (trying to get the from address)")
+			log.Print(err)
+		} else {
+			fmt.Printf("msg.From().Hex(): %v\n", msg.From().Hex())
 		}
-		fmt.Printf("msg.From().Hex(): %v\n", msg.From().Hex())
 
 		// Check receipts
 		receipt, err := client.TransactionReceipt(context.Background(), tx.Hash())
