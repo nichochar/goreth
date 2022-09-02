@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"math/big"
 	"strings"
@@ -12,13 +14,30 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
+type Secrets struct {
+	InfuraKey string
+}
+
 const (
-	infuraConn = "https://mainnet.infura.io/v3/94112cb024c74fb697592b77c4819ff1"
+	infuraBaseUrl = "https://mainnet.infura.io/v3/"
 	// Contract addresses
 	bcsContractAddr  = "0xe182A80E76B1cF17D0eB018D563823357F1Ae296"
 	nichocharEthAddr = "0x885F8588bB15a046f71bD5119f5BC3B67ee883d3"
 	dwrAddr          = "0xD7029BDEa1c17493893AAfE29AAD69EF892B8ff2"
 )
+
+func infuraConn() (string, error) {
+	content, err := ioutil.ReadFile("./secrets.json")
+	if err != nil {
+		return "", err
+	}
+	var secrets Secrets
+	err = json.Unmarshal(content, &secrets)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%v%v", infuraBaseUrl, secrets.InfuraKey), nil
+}
 
 // CLI utility that prints a title nicely, directly to the console
 // My Title becomes ->

@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
+const localChainID = 1337
+
 func transferEthLocal(
 	client *ethclient.Client,
 	to string,
@@ -58,8 +60,7 @@ func transferEthLocal(
 
 	// 1337 is a magical number because the chain we're running on is
 	// a private geth implementation(ganache)
-	ganacheChainId := big.NewInt(1337)
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(ganacheChainId), privateKey)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(localChainID)), privateKey)
 	if err != nil {
 		return nil, err
 	}

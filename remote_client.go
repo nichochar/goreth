@@ -13,6 +13,11 @@ import (
 
 func mainRemote() {
 	printTitle("Client")
+	infuraConn, err := infuraConn()
+	fmt.Println(infuraConn)
+	if err != nil {
+		log.Fatal(err)
+	}
 	client, err := ethclient.Dial(infuraConn)
 	if err != nil {
 		log.Fatal(err)
