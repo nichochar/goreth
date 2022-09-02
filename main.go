@@ -86,10 +86,12 @@ func getPendingEthBalanceForAddr(client *ethclient.Client, addr string) (*big.Fl
 func main() {
 	localFlag := flag.Bool("local", false, "a flag that, if passed, runs the script locally")
 	fmt.Println("Fun with Go and Ethereum.")
+
+	deployFlag := flag.Bool("deploy", false, "a flag that, if passed, deploys the Storage contract")
 	flag.Parse()
 
 	if *localFlag {
-		mainLocal()
+		mainLocal(*deployFlag)
 	} else {
 		mainRemote()
 	}

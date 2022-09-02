@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -40,13 +41,15 @@ func buildAuth(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*bind.Tr
 	return auth, nil
 }
 
-func deployContract(client *ethclient.Client, privateKey *ecdsa.PrivateKey) error {
-	//auth, err := buildAuth(client, privateKey)
-	//if err != nil {
-	//return err
-	//}
+func deployContract(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*Storage, error) {
+	auth, err := buildAuth(client, privateKey)
+	if err != nil {
+		return nil, err
+	}
 
-	//input := "1.0"
-	//address, tx, instance, err := DeployStorage(auth, client, input)
-	return nil
+	address, tx, instance, err := DeployStorage(auth, client)
+	fmt.Printf("Address of contract: %v\n", address)
+	fmt.Printf("Tx: %v\n: ", tx)
+
+	return instance, nil
 }

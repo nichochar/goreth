@@ -46,7 +46,7 @@ func printBalancesForAccounts1And2(client *ethclient.Client) {
 	fmt.Println("---")
 }
 
-func mainLocal() {
+func mainLocal(deploy bool) {
 	fmt.Println("Running against local client (ganache)...")
 	client, err := ethclient.Dial(localGanacheConn)
 	if err != nil {
@@ -58,4 +58,17 @@ func mainLocal() {
 	transferEthLocal(client, account1.address, account0.privateKey, value)
 	printBalancesForAccounts1And2(client)
 
+	if deploy {
+		fmt.Println("Deploying contract...")
+		privateKeyAccount0, err := privateKeyFromHex(account0.privateKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		storage, err := deployContract(client, privateKeyAccount0)
+		if err != nil {
+			log.Print("Error deploying contract")
+			log.Fatal(err)
+		}
+		fmt.Printf("We have storage: %v\n", storage)
+	}
 }
