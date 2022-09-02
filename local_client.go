@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"log"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -17,6 +21,11 @@ type Account struct {
 const (
 	// Assumes you're running the following in another process
 	localGanacheConn = "http://localhost:8545"
+
+	// You can always re-deploy it with `go run . -local -deploy`
+	// and update this value if you wish.
+	// Current owner: account0
+	contractAddressHex = "0x0Cf777784463a2c643c762959985690E6b0609E6"
 )
 
 var account0 = Account{
@@ -71,4 +80,50 @@ func mainLocal(deploy bool) {
 		}
 		fmt.Printf("We have storage: %v\n", storage)
 	}
+
+	// Let's interact with the contract
+	instance, err := loadContract(client, contractAddressHex)
+	_ = instance
+	fmt.Println("It worked!")
+
+	// Let's write to it with account1
+	privateKey, err := privateKeyFromHex(account1.privateKey)
+	if err != nil {
+		fmt.Println("Now1")
+		log.Fatal(err)
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("Error converting private key to public one (ECDSA)")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		fmt.Println("Now2")
+		log.Fatal(err)
+	}
+
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		fmt.Println("Now3")
+		log.Fatal(err)
+	}
+
+	auth := bind.NewKeyedTransactor(privateKey)
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)     // in wei
+	auth.GasLimit = uint64(300000) // in units
+	auth.GasPrice = gasPrice
+
+	num := big.NewInt(42)
+	tx, err := instance.Store(auth, num)
+	if err != nil {
+		fmt.Println("Now4")
+		log.Fatal(err)
+	}
+	fmt.Printf("Transaction went through! We saved %d to contract store\n", num)
+	fmt.Printf("(tx: %v)\n", tx.Hash().Hex())
+
 }

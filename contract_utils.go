@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -52,4 +53,10 @@ func deployContract(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*St
 	fmt.Printf("Tx: %v\n: ", tx)
 
 	return instance, nil
+}
+
+func loadContract(client *ethclient.Client, contractAddressHex string) (*Storage, error) {
+	address := common.HexToAddress(contractAddressHex)
+	instance, err := NewStorage(address, client)
+	return instance, err
 }
