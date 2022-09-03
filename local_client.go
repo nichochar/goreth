@@ -22,7 +22,7 @@ const (
 	// You can always re-deploy it with `go run . -local -deploy`
 	// and update this value if you wish.
 	// Current owner: account0
-	contractAddressHex = "0x0Cf777784463a2c643c762959985690E6b0609E6"
+	contractAddressHex = "0x1a7cF231150e7069FCCfF1531bbE64e905fF69ff"
 )
 
 var account0 = Account{
