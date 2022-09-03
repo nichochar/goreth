@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -55,7 +52,7 @@ func printBalancesForAccounts1And2(client *ethclient.Client) {
 	fmt.Println("---")
 }
 
-func mainLocal(deploy bool) {
+func mainLocal(deploy bool, writeNum int, readNum bool) {
 	fmt.Println("Running against local client (ganache)...")
 	client, err := ethclient.Dial(localGanacheConn)
 	if err != nil {
@@ -83,47 +80,38 @@ func mainLocal(deploy bool) {
 
 	// Let's interact with the contract
 	instance, err := loadContract(client, contractAddressHex)
-	_ = instance
-	fmt.Println("It worked!")
-
-	// Let's write to it with account1
 	privateKey, err := privateKeyFromHex(account1.privateKey)
 	if err != nil {
-		fmt.Println("Now1")
-		log.Fatal(err)
-	}
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Fatal("Error converting private key to public one (ECDSA)")
-	}
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		fmt.Println("Now2")
 		log.Fatal(err)
 	}
 
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		fmt.Println("Now3")
-		log.Fatal(err)
+	if writeNum != 0 {
+		auth, err := buildAuthForTx(client, privateKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// Let's write to the contract with account1!
+
+		auth.Value = big.NewInt(0)     // in wei
+		auth.GasLimit = uint64(300000) // in units
+
+		num := big.NewInt(int64(writeNum))
+		tx, err := instance.Store(auth, num)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Transaction went through! We saved %d to contract store\n", num)
+		fmt.Printf("(tx: %v)\n", tx.Hash().Hex())
 	}
 
-	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)     // in wei
-	auth.GasLimit = uint64(300000) // in units
-	auth.GasPrice = gasPrice
+	if readNum {
+		result, err := instance.Retrieve(&bind.CallOpts{})
+		if err != nil {
+			log.Print("Error reading from store")
+			log.Fatal(err)
+		}
+		fmt.Printf("Read value from store: %d\n", result)
 
-	num := big.NewInt(42)
-	tx, err := instance.Store(auth, num)
-	if err != nil {
-		fmt.Println("Now4")
-		log.Fatal(err)
 	}
-	fmt.Printf("Transaction went through! We saved %d to contract store\n", num)
-	fmt.Printf("(tx: %v)\n", tx.Hash().Hex())
 
 }

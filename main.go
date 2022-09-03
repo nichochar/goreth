@@ -88,10 +88,14 @@ func main() {
 	fmt.Println("Fun with Go and Ethereum.")
 
 	deployFlag := flag.Bool("deploy", false, "a flag that, if passed, deploys the Storage contract")
+
+	writeNum := flag.Int("write", 0, "if passed an int != 0, we write it to the contract")
+
+	readNum := flag.Bool("read", false, "a flag that, if passed, reads the value in the contract")
 	flag.Parse()
 
 	if *localFlag {
-		mainLocal(*deployFlag)
+		mainLocal(*deployFlag, *writeNum, *readNum)
 	} else {
 		mainRemote()
 	}

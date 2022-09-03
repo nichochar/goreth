@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func buildAuth(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*bind.TransactOpts, error) {
+func buildAuthForTx(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*bind.TransactOpts, error) {
 	// Get the nonce for this address
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -43,7 +43,7 @@ func buildAuth(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*bind.Tr
 }
 
 func deployContract(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (*Storage, error) {
-	auth, err := buildAuth(client, privateKey)
+	auth, err := buildAuthForTx(client, privateKey)
 	if err != nil {
 		return nil, err
 	}
